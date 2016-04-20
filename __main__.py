@@ -242,6 +242,26 @@ def heal_player(amount):
 	message('Your woulds start to heal!', libtcod.light_violet)
 	player.creature.heal(vary(amount))
 
+def cast_lightning(distance):
+	monster = closest_monster(distance)
+	damage = vary(20)
+	if monster is None:
+		message('No enemies within range.', libtcod.red)
+		return 'do-not-destroy'
+	message('ZAP! A bolt of lightning cracks into the ' + monster.name + '! ' + str(damage) + ' damage!', libtcod.light_blue)
+	monster.creature.take_damage(damage)
+
+def closest_monster(max_distance):
+	closest_enemy = None
+	closest_dist = max_distance + 1
+	for object in glob.objects:
+		if object.creature and not object == player and libtcod.map_is_in_fov(fov_map, object.x, object.y):
+			dist = player.distance_to(object)
+			if dist < closest_dist:
+				closest_enemy = object
+				closest_dist = dist
+	return closest_enemy
+
 def render_all():
 	if glob.fov_recompute:
 		glob.fov_recompute = False
@@ -399,8 +419,13 @@ def place_objects(room):
 		x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
 		y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
 		if not is_blocked(x, y):
-			item_component = Item(use_function=heal_player, use_argument=5)
-			item = Object(x, y, '!', 'health potion', libtcod.pink, item=item_component)
+			dice = libtcod.random_get_int(0, 0, 100)
+			if dice < 70:
+				item_component = Item(use_function=heal_player, use_argument=5)
+				item = Object(x, y, '!', 'health potion', libtcod.pink, item=item_component)
+			else:
+				item_component = Item(use_function=cast_lightning, use_argument=5)
+				item = Object(x, y, ']', 'scroll of lightning', libtcod.light_yellow, item=item_component)
 			glob.objects.append(item)
 			item.send_to_back()
 
